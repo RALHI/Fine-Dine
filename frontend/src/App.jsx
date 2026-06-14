@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Link, useNavigate, Navigate } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Link, useNavigate, Navigate } from 'react-router-dom';
 import { Compass, ShoppingCart } from 'lucide-react';
 
 // Currency
@@ -189,10 +189,10 @@ function AppContent() {
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <Router>
       <CurrencyProvider>
         <AppContent />
       </CurrencyProvider>
-    </BrowserRouter>
+    </Router>
   );
 }
