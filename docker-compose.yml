@@ -1,0 +1,220 @@
+version: '3.8'
+
+services:
+  # --- INFRASTRUCTURE SERVICES ---
+  
+  db:
+    image: postgres:15-alpine
+    container_name: postgres_db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: food_delivery
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d food_delivery"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis_cache
+    restart: always
+    ports:
+      - "6379:6379"
+
+  kafka:
+    image: apache/kafka:latest
+    container_name: kraft_kafka
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: 'broker,controller'
+      KAFKA_LISTENERS: 'PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093'
+      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://kafka:9092'
+      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT'
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@kafka:9093'
+      KAFKA_LOG_DIRS: '/var/lib/kafka/data'
+      KAFKA_OFFLINE_LOG_DIR_FORCE_CLEAN: 'true'
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: qdrant_db
+    restart: always
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+
+  # --- APPLICATION SERVICES ---
+
+  user-service:
+    build: .
+    container_name: user_service
+    command: python user_service/main.py
+    ports:
+      - "8001:8001"
+    environment:
+      - PORT=8001
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/food_delivery
+      - JWT_SECRET_KEY=supersecretkeyforfooddeliveryapp2026
+    depends_on:
+      db:
+        condition: service_healthy
+
+  restaurant-service:
+    build: .
+    container_name: restaurant_service
+    command: python restaurant_service/main.py
+    ports:
+      - "8002:8002"
+    environment:
+      - PORT=8002
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/food_delivery
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - JWT_SECRET_KEY=supersecretkeyforfooddeliveryapp2026
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - HF_API_KEY=${HF_API_KEY:-}
+      - HF_VISION_MODEL=${HF_VISION_MODEL:-Qwen/Qwen2-VL-7B-Instruct}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  order-service:
+    build: .
+    container_name: order_service
+    command: python order_service/main.py
+    ports:
+      - "8003:8003"
+    environment:
+      - PORT=8003
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/food_delivery
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - JWT_SECRET_KEY=supersecretkeyforfooddeliveryapp2026
+    depends_on:
+      db:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+
+  payment-service:
+    build: .
+    container_name: payment_service
+    command: python payment_service/main.py
+    ports:
+      - "8004:8004"
+    environment:
+      - PORT=8004
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/food_delivery
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - JWT_SECRET_KEY=supersecretkeyforfooddeliveryapp2026
+    depends_on:
+      db:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+
+  delivery-service:
+    build: .
+    container_name: delivery_service
+    command: python delivery_service/main.py
+    ports:
+      - "8005:8005"
+    environment:
+      - PORT=8005
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/food_delivery
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - JWT_SECRET_KEY=supersecretkeyforfooddeliveryapp2026
+    depends_on:
+      db:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+
+  notification-service:
+    build: .
+    container_name: notification_service
+    command: python notification_service/main.py
+    ports:
+      - "8006:8006"
+    environment:
+      - PORT=8006
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+    depends_on:
+      kafka:
+        condition: service_started
+
+  chatbot-service:
+    build:
+      context: .
+      dockerfile: chatbot_service/Dockerfile
+    container_name: chatbot_service
+    command: python chatbot_service/main.py
+    ports:
+      - "8007:8007"
+    environment:
+      - PORT=8007
+      - QDRANT_HOST=qdrant
+      - QDRANT_PORT=6333
+      - QDRANT_COLLECTION_NAME=food_delivery_faq
+      - HF_API_KEY=${HF_API_KEY:-}
+      - HF_MODEL=${HF_MODEL:-Qwen/Qwen2.5-7B-Instruct}
+    depends_on:
+      qdrant:
+        condition: service_started
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    container_name: react_frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app/frontend
+      - /app/frontend/node_modules
+    environment:
+      - NODE_ENV=development
+
+  gateway:
+    build: .
+    container_name: gateway_service
+    command: python gateway/main.py
+    ports:
+      - "8000:8000"
+    environment:
+      - USER_SERVICE_URL=http://user-service:8001
+      - RESTAURANT_SERVICE_URL=http://restaurant-service:8002
+      - ORDER_SERVICE_URL=http://order-service:8003
+      - PAYMENT_SERVICE_URL=http://payment-service:8004
+      - DELIVERY_SERVICE_URL=http://delivery-service:8005
+      - NOTIFICATION_SERVICE_URL=http://notification-service:8006
+      - CHATBOT_SERVICE_URL=http://chatbot-service:8007
+      - FRONTEND_SERVICE_URL=http://frontend:5173
+    depends_on:
+      - user-service
+      - restaurant-service
+      - order-service
+      - payment-service
+      - delivery-service
+      - notification-service
+      - frontend
+
+volumes:
+  postgres_data:
+  qdrant_data:
