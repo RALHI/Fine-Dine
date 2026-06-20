@@ -1,19 +1,14 @@
 #!/bin/bash
 
-# Default to 'ralhi' if no argument is provided
-DOCKER_USERNAME=${1:-ralhi}
+# Default to 'sralhi99' if no argument is provided
+DOCKER_USERNAME=${1:-sralhi99}
 
 echo "================================================"
 echo "Publishing Fine-Dine Docker Images to Docker Hub"
 echo "Target Docker Username: $DOCKER_USERNAME"
 echo "================================================"
 
-# Ensure user is logged in
-if ! docker info | grep -q "Username"; then
-    echo "❌ Error: You are not logged into Docker."
-    echo "Please run 'docker login' first."
-    exit 1
-fi
+# Login check removed because credential helpers hide the username in 'docker info'
 
 SERVICES=(
     "user-service"

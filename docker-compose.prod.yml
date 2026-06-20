@@ -61,7 +61,7 @@ services:
   # --- APPLICATION SERVICES ---
 
   user-service:
-    image: ralhi/finedine-user-service:latest
+    image: sralhi99/finedine-user-service:latest
     container_name: user_service
     command: python user_service/main.py
     ports:
@@ -75,7 +75,7 @@ services:
         condition: service_healthy
 
   restaurant-service:
-    image: ralhi/finedine-restaurant-service:latest
+    image: sralhi99/finedine-restaurant-service:latest
     container_name: restaurant_service
     command: python restaurant_service/main.py
     ports:
@@ -96,7 +96,7 @@ services:
         condition: service_started
 
   order-service:
-    image: ralhi/finedine-order-service:latest
+    image: sralhi99/finedine-order-service:latest
     container_name: order_service
     command: python order_service/main.py
     ports:
@@ -113,7 +113,7 @@ services:
         condition: service_started
 
   payment-service:
-    image: ralhi/finedine-payment-service:latest
+    image: sralhi99/finedine-payment-service:latest
     container_name: payment_service
     command: python payment_service/main.py
     ports:
@@ -130,7 +130,7 @@ services:
         condition: service_started
 
   delivery-service:
-    image: ralhi/finedine-delivery-service:latest
+    image: sralhi99/finedine-delivery-service:latest
     container_name: delivery_service
     command: python delivery_service/main.py
     ports:
@@ -147,7 +147,7 @@ services:
         condition: service_started
 
   notification-service:
-    image: ralhi/finedine-notification-service:latest
+    image: sralhi99/finedine-notification-service:latest
     container_name: notification_service
     command: python notification_service/main.py
     ports:
@@ -160,7 +160,7 @@ services:
         condition: service_started
 
   chatbot-service:
-    image: ralhi/finedine-chatbot-service:latest
+    image: sralhi99/finedine-chatbot-service:latest
     container_name: chatbot_service
     command: python chatbot_service/main.py
     ports:
@@ -177,7 +177,7 @@ services:
         condition: service_started
 
   frontend:
-    image: ralhi/finedine-frontend:latest
+    image: sralhi99/finedine-frontend:latest
     container_name: react_frontend
     ports:
       - "5173:5173"
@@ -185,7 +185,7 @@ services:
       - NODE_ENV=production
 
   gateway:
-    image: ralhi/finedine-gateway:latest
+    image: sralhi99/finedine-gateway:latest
     container_name: gateway_service
     command: python gateway/main.py
     ports:
