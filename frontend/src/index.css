@@ -96,6 +96,16 @@ header {
   gap: 16px;
 }
 
+/* Mobile Menu Button */
+.mobile-menu-btn {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text);
+  padding: 4px;
+}
+
 /* Buttons */
 .btn {
   display: inline-flex;
@@ -218,6 +228,44 @@ footer {
 @media (max-width: 768px) {
   .footer-grid { grid-template-columns: 1fr; }
   .grid-3{ grid-template-columns: 1fr; }
+  
+  .mobile-menu-btn {
+    display: block;
+  }
+  
+  .nav-links {
+    position: fixed;
+    top: 72px;
+    left: 0;
+    width: 100%;
+    background-color: var(--bg);
+    flex-direction: column;
+    padding: 24px;
+    gap: 20px;
+    box-shadow: var(--shadow-lg);
+    border-bottom: 1px solid var(--border);
+    clip-path: polygon(0 0, 100% 0, 100% 0, 0 0);
+    transition: clip-path 0.3s ease-in-out;
+    align-items: flex-start;
+  }
+
+  .nav-links.open {
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+  }
+
+  .nav-actions {
+    display: none; /* Hide standard actions on mobile, maybe move them into the menu */
+  }
+  
+  .nav-actions.mobile {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+  }
 }
 
 /* Animations */

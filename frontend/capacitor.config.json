@@ -1,0 +1,6 @@
+{
+  "appId": "com.finedine.app",
+  "appName": "FineDine",
+  "webDir": "dist",
+  "bundledWebRuntime": false
+}

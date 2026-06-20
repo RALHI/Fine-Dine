@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { HashRouter as Router, Routes, Route, Link, useNavigate, Navigate } from 'react-router-dom';
-import { Compass, ShoppingCart } from 'lucide-react';
+import { Compass, ShoppingCart, Menu, X } from 'lucide-react';
 
 // Currency
 import { CurrencyProvider } from './context/CurrencyContext.jsx';
@@ -42,6 +42,7 @@ function AppContent() {
   const [userRole, setUserRole] = useState(localStorage.getItem('role'));
   const [userName, setUserName] = useState(localStorage.getItem('name'));
   const [cartCount, setCartCount] = useState(0);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const updateCartCount = () => {
     const cart = JSON.parse(localStorage.getItem('cart') || '[]');
@@ -61,6 +62,7 @@ function AppContent() {
     setUserToken(null);
     setUserRole(null);
     setUserName(null);
+    setIsMobileMenuOpen(false);
     navigate('/');
     window.location.reload();
   };
@@ -74,15 +76,45 @@ function AppContent() {
             <Compass /> FineDine
           </Link>
 
-          <nav className="nav-links">
-            <Link to="/restaurants" className="nav-link">Restaurants</Link>
+          <button 
+            className="mobile-menu-btn" 
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          >
+            {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+
+          <nav className={`nav-links ${isMobileMenuOpen ? 'open' : ''}`}>
+            <Link to="/restaurants" className="nav-link" onClick={() => setIsMobileMenuOpen(false)}>Restaurants</Link>
             
-            {userToken && userRole === 'Customer' && <Link to="/dashboard" className="nav-link">My Dashboard</Link>}
-            {userToken && userRole === 'Restaurant Owner' && <Link to="/owner" className="nav-link">Owner Panel</Link>}
-            {userToken && userRole === 'Delivery Partner' && <Link to="/delivery" className="nav-link">Rider Portal</Link>}
-            {userToken && userRole === 'Admin' && <Link to="/admin" className="nav-link">Admin Dashboard</Link>}
+            {userToken && userRole === 'Customer' && <Link to="/dashboard" className="nav-link" onClick={() => setIsMobileMenuOpen(false)}>My Dashboard</Link>}
+            {userToken && userRole === 'Restaurant Owner' && <Link to="/owner" className="nav-link" onClick={() => setIsMobileMenuOpen(false)}>Owner Panel</Link>}
+            {userToken && userRole === 'Delivery Partner' && <Link to="/delivery" className="nav-link" onClick={() => setIsMobileMenuOpen(false)}>Rider Portal</Link>}
+            {userToken && userRole === 'Admin' && <Link to="/admin" className="nav-link" onClick={() => setIsMobileMenuOpen(false)}>Admin Dashboard</Link>}
+
+            {/* Mobile Actions rendered inside nav menu when open */}
+            <div className="nav-actions mobile" style={{ display: isMobileMenuOpen ? 'flex' : 'none' }}>
+              <CurrencySelector />
+
+              <Link to="/cart" className="nav-link" style={{ position: 'relative' }} onClick={() => setIsMobileMenuOpen(false)}>
+                <ShoppingCart />
+                <span className="badge">{cartCount}</span>
+              </Link>
+
+              {userToken ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '8px' }}>
+                  <span style={{ fontSize: '14px', fontWeight: 500 }}>Hi, {userName}</span>
+                  <button onClick={handleSignOut} className="btn btn-outline btn-sm">Sign Out</button>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                  <Link to="/auth?mode=login" className="btn btn-outline btn-sm" onClick={() => setIsMobileMenuOpen(false)}>Log In</Link>
+                  <Link to="/auth?mode=register" className="btn btn-primary btn-sm" onClick={() => setIsMobileMenuOpen(false)}>Sign Up</Link>
+                </div>
+              )}
+            </div>
           </nav>
 
+          {/* Desktop Actions */}
           <div className="nav-actions">
             <CurrencySelector />
 
